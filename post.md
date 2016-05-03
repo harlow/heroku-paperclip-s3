@@ -1,5 +1,3 @@
-> WARNING: The following code samples are not compatible with the new AWS 2.0 SDK. We are in the process of updating the text and example repository.
-
 Many web apps require the user to upload images and other files for storage and processing. Paperclip is a cleanly abstracted Ruby library that reduces the complexity of file uploading and processing.
 
 Using Paperclip with an external storage service such as Amazon S3 or Rackspace CloudFiles allows you to scale your application's files and codebase independently. Such an architecture is required in highly elastic environments that distribute your application across multiple instances, such as Heroku.
@@ -10,7 +8,7 @@ This guide describes how to set up a Ruby on Rails application with image upload
 
 * [AWS S3 Account](https://devcenter.heroku.com/articles/s3#s3-setup) for storing images in the cloud.
 * [Heroku Toolbelt](https://toolbelt.heroku.com/) to create and deploy web applications to Heroku.
-* [ImageMagick](http://www.imagemagick.org/script/index.php) for resizing images. 
+* [ImageMagick](http://www.imagemagick.org/script/index.php) for resizing images.
 
 Note: Mac users can install ImageMagick with [Homebrew](http://mxcl.github.com/homebrew/) `brew install imagemagick`. Windows users can use the [Windows binary release](http://www.imagemagick.org/script/binary-releases.php#windows).
 
@@ -22,10 +20,10 @@ Paperclip is an easy file attachment library for `ActiveRecord`. It treats files
 
 ![Paperclip Demo Application](https://s3.amazonaws.com/heroku-devcenter-files/article-images/841-imported-1443570312-841-imported-1443554781-paperclip_demo_screenshot_470.png)
 
-The reference application allows a user to manage a list of their friends. 
+The reference application allows a user to manage a list of their friends.
 
-* Each friend will have an `avatar` with Paperclip providing the image upload and resizing functionality. 
-* The app will demonstrate how to generate scaled down thumbnails, and display the resized images. 
+* Each friend will have an `avatar` with Paperclip providing the image upload and resizing functionality.
+* The app will demonstrate how to generate scaled down thumbnails, and display the resized images.
 * The application will also gracefully degrade to display a default image `missing.png` for friends without an avatar.
 
 <a href="https://github.com/thoughtbot/paperclip_demo" target="_blank">Download the source code from GitHub</a>.
@@ -37,7 +35,7 @@ Paperclip requires the following gems added to your Gemfile.
 ```ruby
 # Gemfile
 gem 'paperclip'
-gem 'aws-sdk'
+gem 'aws-sdk', '~> 2.3'
 ```
 
 Run `bundle install` and restart the Rails server after modifying the Gemfile.
@@ -47,11 +45,12 @@ We'll also need to specify the AWS configuration variables for the production En
 ```ruby
 # config/environments/production.rb
 config.paperclip_defaults = {
-  :storage => :s3,
-  :s3_credentials => {
-    :bucket => ENV['S3_BUCKET_NAME'],
-    :access_key_id => ENV['AWS_ACCESS_KEY_ID'],
-    :secret_access_key => ENV['AWS_SECRET_ACCESS_KEY']
+  storage: s3:,
+  s3_credentials: {
+    bucket: ENV.fetch('S3_BUCKET_NAME'),
+    access_key_id: ENV.fetch('AWS_ACCESS_KEY_ID'),
+    secret_access_key: ENV.fetch('AWS_SECRET_ACCESS_KEY'),
+    s3_region: ENV.fetch('AWS_REGION'),
   }
 }
 ```
@@ -66,6 +65,7 @@ Additionally, we'll need to the set the AWS configuration variables on the Herok
 $ heroku config:set S3_BUCKET_NAME=your_bucket_name
 $ heroku config:set AWS_ACCESS_KEY_ID=your_access_key_id
 $ heroku config:set AWS_SECRET_ACCESS_KEY=your_secret_access_key
+$ heroku config:set AWS_REGION=your_aws_region
 ```
 
 ## International users (additional configuration)
@@ -76,10 +76,10 @@ If you are having issues uploading images please read the following two configur
  If you continue to have issues please see the <a href="http://rdoc.info/github/thoughtbot/paperclip/Paperclip/Storage/S3" target="_blank">Paperclip documentation</a> page for detailed configuration options.
 </p>
 
-To override the default URL structure and place the bucket's name  "domain-style" in the URL (e.g. your_bucket_name.s3.amazonaws.com). These options can be placed in the  `paperclip_defaults` configuration hash shown above, or into an initializer. 
+To override the default URL structure and place the bucket's name  "domain-style" in the URL (e.g. your_bucket_name.s3.amazonaws.com). These options can be placed in the  `paperclip_defaults` configuration hash shown above, or into an initializer.
 
 ```ruby
-# config/initializers/paperclip.rb 
+# config/initializers/paperclip.rb
 Paperclip::Attachment.default_options[:url] = ':s3_domain_url'
 Paperclip::Attachment.default_options[:path] = '/:class/:attachment/:id_partition/:style/:filename'
 ```
@@ -87,7 +87,7 @@ Paperclip::Attachment.default_options[:path] = '/:class/:attachment/:id_partitio
 If you are seeing the following error: "The bucket you are attempting to access must be addressed using the specified endpoint. Please send all future requests to this endpoint." Try setting the specified endpoint with the `s3_host_name` config var.
 
 ```ruby
-# config/initializers/paperclip.rb 
+# config/initializers/paperclip.rb
 Paperclip::Attachment.default_options[:s3_host_name] = 's3-us-west-2.amazonaws.com'
 ```
 
@@ -140,14 +140,14 @@ end
 [This migration](https://github.com/thoughtbot/paperclip_demo/blob/master/db/migrate/20120802191046_add_avatar_to_friends.rb)  will create `avatar_file_name`, `avatar_file_size`, `avatar_content_type`, and `avatar_updated_at` attributes on the `Friend` model. These attributes will be set automatically when files are uploaded.
 
 Run the migrations with `rake db:migrate` to update your database.
- 
+
 ## Upload form
 
 Images are uploaded to your application before being stored in S3. This allows your models to perform validations and other processing before being sent to S3.
 
 ![Form with File Input](https://s3.amazonaws.com/heroku-devcenter-files/article-images/841-imported-1443570313-841-imported-1443554782-paperclip_form_470.png)
-   
-Add a file input field to the [web form](https://github.com/thoughtbot/paperclip_demo/blob/master/app/views/friends/_form.html.erb) that allows users to browse and select images from their local filesystem. 
+
+Add a file input field to the [web form](https://github.com/thoughtbot/paperclip_demo/blob/master/app/views/friends/_form.html.erb) that allows users to browse and select images from their local filesystem.
 
 Make sure the form has `multipart: true` added to it.
 
@@ -172,7 +172,7 @@ When the form is submitted and the backing models are successfully persisted to 
 
 ## Upload controller
 
-With Rails 4 we'll need to specify the permitted params. We'll permit `:name` and `:avatar` in the params. 
+With Rails 4 we'll need to specify the permitted params. We'll permit `:name` and `:avatar` in the params.
 
 ```ruby
 class FriendsController < ApplicationController
